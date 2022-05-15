@@ -1,5 +1,5 @@
 import SuggestionsList from "./SuggestionsList";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // This endpoint is from TheMovieDB https://developers.themoviedb.org/3/search/search-movies
 // There is a missing query string `query` to make the search
@@ -8,41 +8,43 @@ const MOVIES_ENDPOINT =
 
 export default function TypeaheadInput() {
 
-  const [results,setResults] = useState([]);
+  const [results, setResults] = useState([]);
+  const [searchs, setCacheSearchs] = useState([]);
   let filterTimeout;
 
-  const blur = ()=>{
+  const blur = () => {
     setResults([]);
   }
 
-  const focus = (e)=>{
-    if(e?.target?.value){
+  const focus = (e) => {
+    if (e?.target?.value) {
       getApiData(e.target.value);
     }
   }
 
   const getApiData = (query) => {
     const url = `${MOVIES_ENDPOINT}&query=${encodeURI(query)}`;
-    try{  
+    try {
       fetch(url)
-        .then(response=> response.json())
+        .then(response => response.json())
         .then(data => {
-            if(data?.results.length > 0){
-              setSearchs(query);
-            }
-            setResults(data.results)}
-          );
-      } catch (error){
-        console.log("ERRO:",error)
-      }
-  } 
+          if (data?.results.length > 0) {
+            setSearchs(query);
+          }
+          setResults(data.results)
+        }
+        );
+    } catch (error) {
+      console.log("ERRO:", error)
+    }
+  }
 
   const getSearchs = () => {
     let data = localStorage.getItem('searchs');
     let queries;
     try {
       let temp = JSON.parse(data);
-      if(Array.isArray(temp)){
+      if (Array.isArray(temp)) {
         queries = temp;
       } else {
         queries = [];
@@ -57,18 +59,24 @@ export default function TypeaheadInput() {
     let queries = getSearchs();
     queries.push(query);
     queries = [...new Set(queries)]
-    localStorage.setItem('searchs',JSON.stringify(queries));
+    setCacheSearchs(queries);
+    localStorage.setItem('searchs', JSON.stringify(queries));
   }
 
-  const debounceSearch = (e) =>{
+  const debounceSearch = (e) => {
     clearTimeout(filterTimeout)
     if (!e?.target?.value) return setResults([])
-    setResults([{id:0,title:'...'}])
+    setResults([{ id: 0, title: '...' }])
 
     filterTimeout = setTimeout(() => {
       getApiData(e.target.value);
     }, 250)
   }
+
+  useEffect(() => {
+    setCacheSearchs(getSearchs());
+
+  }, [])
 
   return (
     <div className="flex flex-col justify-center items-center">
@@ -81,6 +89,17 @@ export default function TypeaheadInput() {
         type="text"
       />
       {results.length > 0 && <SuggestionsList suggestions={results} />}
+
+      {/* SHOW HISTORY SEARCHS */}
+      <div>
+        <ul className="flex flex-wrap">
+          {searchs.map((search, i) => (
+            <li key={search} className="p-1">
+              <span>{search}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import CacheSearchs from "./CacheSearchs";
+
 import TypeaheadInput from "./TypeaheadInput";
 
 export default function Form() {
